@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GDrive Planner</title>
+<link href="https://fonts.googleapis.com/css?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<style>
+:root {
+  --primary: #1a73e8;
+  --bg-color: #f4f5f7;
+  --surface: #ffffff;
+  --text-main: #202124;
+  --text-sec: #5f6368;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Roboto', sans-serif; background-color: var(--bg-color); color: var(--text-main); }
+.btn {
+  background-color: var(--primary); color: white; border: none;
+  padding: 10px 20px; border-radius: 4px; font-weight: 500;
+  cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;
+  box-shadow: 0 2px 2px 0 rgba(0,0,0,0.14); transition: 0.2s;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn:hover { box-shadow: 0 4px 5px 0 rgba(0,0,0,0.14); }
+.input-field {
+  width: 100%; padding: 10px 12px; border: 1px solid #ccc;
+  border-radius: 4px; font-size: 14px; outline: none;
+}
+#login-screen {
+  display: flex; height: 100vh; align-items: center; justify-content: center;
+  background-color: #e8f0fe;
+}
+.login-card {
+  background: var(--surface); padding: 40px; border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2); width: 90%; max-width: 400px; text-align: center;
+}
+.error-msg { color: #d93025; font-size: 14px; margin-top: 8px; margin-bottom: 16px; display: none; }
+#app-screen { display: none; height: 100vh; flex-direction: column; }
+header {
+  background: var(--surface); padding: 5px 24px; display: flex;
+  justify-content: space-between; align-items: center; flex-wrap: wrap;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1); z-index: 10; gap: 16px;
+}
+.project-header-container { display: flex; align-items: center; gap: 8px; }
+.edit-project-btn { cursor: pointer; color: var(--text-sec); border-radius: 50%; padding: 4px; transition: 0.2s; }
+.edit-project-btn:hover { background-color: #f1f3f4; color: var(--primary); }
+.header-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.search-bar { display: flex; align-items: center; background: #f1f3f4; padding: 0 12px; border-radius: 8px; }
+.search-bar input { border: none; background: transparent; padding: 8px; outline: none; font-size: 14px; }
+.sort-control { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-sec); }
+.sort-select { padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 13px; background: white; cursor: pointer; }
+
+/* BARRA DE QUADROS */
+.boards-menu-wrapper {
+  display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
+  padding: 5px 24px; background-color: #e8eaed; border-bottom: 1px solid #ddd; gap: 12px;
+}
+.boards-list { display: flex; gap: 8px; align-items: center; overflow-x: auto; flex: 1; padding-bottom: 4px;}
+.board-btn {
+  background-color: var(--surface); border: 1px solid #ccc;
+  padding: 8px 16px; border-radius: 16px; cursor: pointer;
+  font-weight: 500; color: var(--text-sec); white-space: nowrap; transition: all 0.2s;
+}
+.board-btn:hover { background-color: #d2e3fc; color: var(--primary); border-color: var(--primary); }
+.board-btn.active {
+  background-color: var(--primary); color: white; border-color: var(--primary);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+.board-actions-bar { display: flex; align-items: center; gap: 8px; }
+
+/* CONTAINER PRINCIPAL DO KANBAN */
+.main-container { display: flex; flex: 1; overflow: hidden; width: 100%; }
+.board-area { flex: 1; padding: 24px; display: flex; gap: 16px; overflow-x: auto; align-items: flex-start; height: 100%; }
+.kanban-list {
+  background-color: #f1f3f4; border-radius: 8px; width: 290px; min-width: 290px;
+  display: flex; flex-direction: column; max-height: 100%; transition: transform 0.2s;
+}
+.kanban-list.dragging-list { opacity: 0.5; border: 2px dashed var(--primary); }
+.kanban-list-header {
+  padding: 12px 16px; font-weight: 500; display: flex; justify-content: space-between;
+  align-items: center; cursor: grab; user-select: none;
+}
+
+.kanban-list-actions { display: flex; gap: 4px; align-items: center; }
+.edit-list-btn, .delete-list-btn {
+  cursor: pointer; color: #5f6368; border-radius: 50%; padding: 4px; display: flex;
+  align-items: center; transition: 0.2s;
+}
+.edit-list-btn:hover { color: var(--primary); background: rgba(26, 115, 232, 0.1); }
+.delete-list-btn:hover { color: #d93025; background: rgba(217, 48, 37, 0.1); }
+
+.kanban-card {
+  background-color: var(--surface); border-radius: 6px; padding: 12px;
+  margin-bottom: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.15); cursor: grab;
+  transition: box-shadow 0.2s;
+}
+.kanban-card:hover { box-shadow: 0 3px 6px rgba(0,0,0,0.18); }
+.card-tag {
+  display: inline-block; padding: 2px 8px; border-radius: 12px;
+  font-size: 11px; font-weight: bold; color: white; margin-bottom: 8px;
+}
+.card-title { font-weight: 500; margin-bottom: 4px; word-break: break-word; }
+.card-body { font-size: 13px; color: var(--text-sec); margin-bottom: 8px; word-break: break-word; }
+.card-footer { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.card-deadline { font-size: 11px; color: #d93025; display: flex; align-items: center; gap: 4px; font-weight: 500; }
+.kanban-card.dragging { opacity: 0.4; border: 2px dashed var(--primary); }
+.kanban-list-body.drag-over { background-color: rgba(26, 115, 232, 0.08); border-radius: 8px; }
+
+/* CHECKLIST DENTRO DO MODAL */
+.checklist-section {margin-top: 16px; border-top: 1px solid #e0e0e0; padding-top: 16px; }
+.checklist-item {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #f8f9fa; padding: 6px 10px; border-radius: 4px; border: 1px solid #e8eaed;
+}
+.checklist-item:hover { background: #f1f3f4; }
+
+/* MEDIA QUERIES PARA RESPONSIVIDADE MOBILE */
+@media (max-width: 768px) {
+  header { flex-direction: column; align-items: stretch; padding: 16px; }
+  .header-actions { flex-direction: column; align-items: stretch; width: 100%; }
+  .search-bar { width: 100%; margin-top: 8px; }
+  .search-bar input { width: 100%; }
+  .sort-control { width: 100%; justify-content: space-between; }
+  .sort-select { flex: 1; }
+  
+  .boards-menu-wrapper { flex-direction: column; align-items: stretch; }
+  .boards-list { width: 100%; padding-bottom: 8px; }
+  .board-actions-bar { justify-content: flex-end; width: 100%; }
+  
+  .board-area { padding: 16px; gap: 12px; }
+  .kanban-list { width: 85vw; min-width: 85vw; max-width: 320px; }
+}
+
+  /* BOTÃO E MODAL DE DOAÇÃO */
+.donate-btn {
+  background-color: #d93025;
+  color: white;
+  border: none;
+  padding: 5px 20px;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 14px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  animation: pulse 2s infinite;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.donate-btn:hover {
+  background-color: #b3261e;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.social-link {
+  display: inline-block;
+  margin: 4px 0;
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+.social-link:hover {
+  text-decoration: underline;
+}
+
+</style>
+</head>
+<body>
+<!-- TELA DE LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <h2 style="margin-bottom: 24px;">Faça login no GDrive Planner</h2>
+    <p style="margin-bottom: 16px; color: var(--text-sec);">Insira sua chave de acesso seguro</p>
+    <input type="password" id="access-key" class="input-field" placeholder="Chave (mín. 20 caracteres)" style="margin-bottom: 12px;">
+    <div id="login-error" class="error-msg"></div>
+    <button class="btn" onclick="attemptLogin()" style="width: 100%;">Entrar</button>
+  </div>
+</div>
+
+<!-- TELA DO APLICATIVO -->
+<div id="app-screen">
+  <header>
+    <div class="project-header-container">
+      <h2 id="project-title-display">Carregando Projeto...</h2>
+      <i class="material-icons edit-project-btn" id="edit-project-title-btn" title="Editar nome do Projeto" onclick="openEditProjectTitleModal()" style="display: none;">edit</i>
+    </div>
+    <div class="header-actions">
+      <div class="sort-control">
+        <i class="material-icons" style="font-size: 18px;">sort</i>
+        <select id="sort-select" class="sort-select" onchange="applySortingAndRender()">
+          <option value="default">Ordem Padrão</option>
+          <option value="deadline">Prazo de Entrega (Próximos)</option>
+        </select>
+      </div>
+      <div class="search-bar">
+        <i class="material-icons" style="color: var(--text-sec); font-size: 20px;">search</i>
+        <input type="text" id="search-input" placeholder="Pesquisar cartões...">
+      </div>
+
+      <!-- BOTÃO DE DOAÇÃO -->
+      <button class="donate-btn" onclick="openDonateModal()">
+        <i class="material-icons" style="font-size: 18px;">favorite</i>
+        Apoie este projeto
+      </button>
+    </div>
+  </header>
+
+  <!-- MENU DE QUADROS -->
+  <div class="boards-menu-wrapper">
+    <div id="boards-list" class="boards-list"></div>
+    <div id="board-actions-bar" class="board-actions-bar"></div>
+  </div>
+
+  <div class="main-container">
+    <div class="board-area" id="board-area">
+      <p style="color: var(--text-sec);">Carregando quadros e listas...</p>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR NOME DO PROJETO -->
+<div id="edit-project-title-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center;">
+  <div style="background: var(--surface); padding: 24px; border-radius: 8px; width: 90%; max-width: 400px; box-shadow: 0 4px 24px rgba(0,0,0,0.3);">
+    <h3 style="margin-bottom: 16px;">Editar Nome do Projeto</h3>
+    <label style="font-size: 12px; color: var(--text-sec);">Novo Nome do Projeto Geral</label>
+    <input type="text" id="edit-project-title-input" class="input-field" style="margin-top: 4px; margin-bottom: 12px;">
+    <div id="edit-project-title-error" class="error-msg"></div>
+    <div style="display: flex; justify-content: flex-end; gap: 8px;">
+      <button class="btn" style="background: transparent; color: #666; box-shadow: none;" onclick="closeEditProjectTitleModal()">Cancelar</button>
+      <button class="btn" onclick="saveProjectTitle()" id="btn-save-project-title">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CRIAR NOVO QUADRO -->
+<div id="create-board-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center;">
+  <div style="background: var(--surface); padding: 24px; border-radius: 8px; width: 90%; max-width: 400px; box-shadow: 0 4px 24px rgba(0,0,0,0.3);">
+    <h3 style="margin-bottom: 16px;">Criar Novo Quadro</h3>
+    <label style="font-size: 12px; color: var(--text-sec);">Nome do Quadro</label>
+    <input type="text" id="create-board-input" class="input-field" placeholder="Ex: Financeiro" style="margin-top: 4px; margin-bottom: 12px;">
+    <div id="create-board-error" class="error-msg"></div>
+    <div style="display: flex; justify-content: flex-end; gap: 8px;">
+      <button class="btn" style="background: transparent; color: #666; box-shadow: none;" onclick="closeCreateBoardModal()">Cancelar</button>
+      <button class="btn" onclick="saveNewBoard()" id="btn-save-new-board">Criar Quadro</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR NOME DO QUADRO ATIVO -->
+<div id="edit-board-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center;">
+  <div style="background: var(--surface); padding: 24px; border-radius: 8px; width: 90%; max-width: 400px; box-shadow: 0 4px 24px rgba(0,0,0,0.3);">
+    <h3 style="margin-bottom: 16px;">Editar Nome do Quadro</h3>
+    <label style="font-size: 12px; color: var(--text-sec);">Nome do Quadro</label>
+    <input type="text" id="edit-board-input" class="input-field" style="margin-top: 4px; margin-bottom: 12px;">
+    <div id="edit-board-error" class="error-msg"></div>
+    <div style="display: flex; justify-content: flex-end; gap: 8px;">
+      <button class="btn" style="background: transparent; color: #666; box-shadow: none;" onclick="closeEditBoardModal()">Cancelar</button>
+      <button class="btn" onclick="saveBoardName()" id="btn-save-board-name">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR CARTÃO -->
+<div id="edit-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; overflow-y: auto;">
+  <div style="background: var(--surface); padding: 24px; border-radius: 8px; width: 90%; max-width: 520px; box-shadow: 0 4px 24px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto;">
+    <h3 style="margin-bottom: 16px;">Editar Cartão</h3>
+    <input type="hidden" id="modal-card-id">
+    <label style="font-size: 12px; color: var(--text-sec);">Título</label>
+    <input type="text" id="modal-title" class="input-field" style="margin-bottom: 12px;">
+    <label style="font-size: 12px; color: var(--text-sec);">Descrição</label>
+    <textarea id="modal-body" class="input-field" style="height: 70px; resize: none; margin-bottom: 12px;"></textarea>
+    <div style="display: flex; gap: 16px; margin-bottom: 12px;">
+      <div style="flex: 1;">
+        <label style="font-size: 12px; color: var(--text-sec);">Prazo</label>
+        <input type="date" id="modal-deadline" class="input-field">
+      </div>
+      <div style="flex: 1;">
+        <label style="font-size: 12px; color: var(--text-sec);">Etiqueta</label>
+        <input type="text" id="modal-tag" class="input-field" placeholder="Ex: Urgente">
+      </div>
+    </div>
+
+    <!-- SEÇÃO CHECKLIST -->
+    <div class="checklist-section">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <label style="font-weight: 500; font-size: 14px; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+          <i class="material-icons" style="font-size: 18px; color: var(--text-sec);">check_box</i> Checklist
+        </label>
+        <span id="checklist-progress-text" style="font-size: 12px; font-weight: 500; color: var(--text-sec);">0%</span>
+      </div>
+      <!-- Barra de Progresso -->
+      <div style="width: 100%; background: #e8eaed; height: 6px; border-radius: 3px; margin-bottom: 12px; overflow: hidden;">
+        <div id="checklist-progress-bar" style="width: 0%; background: var(--primary); height: 100%; transition: width 0.3s;"></div>
+      </div>
+      <!-- Lista de Itens -->
+      <div id="checklist-items-container" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px;"></div>
+      <!-- Novo Item Input -->
+      <div id="add-checklist-item-box" style="display: flex; gap: 8px;">
+        <input type="text" id="new-checklist-input" class="input-field" placeholder="Adicionar um item..." onkeypress="if(event.key==='Enter') addChecklistItem()">
+        <button class="btn" onclick="addChecklistItem()" style="padding: 6px 12px; font-size: 12px;">Adicionar</button>
+      </div>
+    </div>
+
+    <div id="modal-error" class="error-msg"></div>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+      <button class="btn" id="btn-delete-card" style="background: #fce8e6; color: #d93025; box-shadow: none;" onclick="confirmDeleteCard()">
+        <i class="material-icons" style="font-size: 18px;">delete</i> Excluir
+      </button>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn" style="background: transparent; color: var(--text-sec); box-shadow: none;" onclick="closeEditModal()">Cancelar</button>
+        <button class="btn" onclick="saveCardEdit()" id="btn-save-card">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CRIAR LISTA -->
+<div id="create-list-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center;">
+  <div style="background: var(--surface); padding: 24px; border-radius: 8px; width: 90%; max-width: 400px; box-shadow: 0 4px 24px rgba(0,0,0,0.3);">
+    <h3 style="margin-bottom: 16px;">Nova Lista</h3>
+    <label style="font-size: 12px; color: var(--text-sec);">Nome da Lista</label>
+    <input type="text" id="new-list-name" class="input-field" placeholder="Ex: Em Revisão" style="margin-bottom: 12px;">
+    <label style="font-size: 12px; color: var(--text-sec);">Cor do Cabeçalho</label>
+    <input type="color" id="new-list-color" value="#1a73e8" style="width: 100%; height: 40px; border: none; border-radius: 4px; cursor: pointer; margin-bottom: 16px;">
+    <div id="create-list-error" class="error-msg"></div>
+    <div style="display: flex; justify-content: flex-end; gap: 8px;">
+      <button class="btn" style="background: transparent; color: #666; box-shadow: none;" onclick="closeCreateListModal()">Cancelar</button>
+      <button class="btn" onclick="saveNewList()" id="btn-save-list">Criar Lista</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR NOME DA LISTA -->
+<div id="edit-list-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center;">
+  <div style="background: var(--surface); padding: 24px; border-radius: 8px; width: 90%; max-width: 400px; box-shadow: 0 4px 24px rgba(0,0,0,0.3);">
+    <h3 style="margin-bottom: 16px;">Editar Nome da Lista</h3>
+    <input type="hidden" id="edit-list-id">
+    <label style="font-size: 12px; color: var(--text-sec);">Novo Nome da Lista</label>
+    <input type="text" id="edit-list-name" class="input-field" style="margin-top: 4px; margin-bottom: 12px;">
+    <div id="edit-list-error" class="error-msg"></div>
+    <div style="display: flex; justify-content: flex-end; gap: 8px;">
+      <button class="btn" style="background: transparent; color: #666; box-shadow: none;" onclick="closeEditListModal()">Cancelar</button>
+      <button class="btn" onclick="saveListName()" id="btn-save-list-name">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CRIAR CARTÃO -->
+<div id="create-card-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center;">
+  <div style="background: var(--surface); padding: 24px; border-radius: 8px; width: 90%; max-width: 500px; box-shadow: 0 4px 24px rgba(0,0,0,0.3);">
+    <h3 style="margin-bottom: 16px;">Novo Cartão</h3>
+    <input type="hidden" id="new-card-list-id">
+    <label style="font-size: 12px; color: var(--text-sec);">Título</label>
+    <input type="text" id="new-card-title" class="input-field" placeholder="Ex: Desenhar Banners" style="margin-bottom: 12px;">
+    <label style="font-size: 12px; color: var(--text-sec);">Descrição</label>
+    <textarea id="new-card-body" class="input-field" style="height: 80px; resize: none; margin-bottom: 12px;" placeholder="Detalhes..."></textarea>
+    <div style="display: flex; gap: 16px; margin-bottom: 12px;">
+      <div style="flex: 1;">
+        <label style="font-size: 12px; color: var(--text-sec);">Prazo</label>
+        <input type="date" id="new-card-deadline" class="input-field">
+      </div>
+      <div style="flex: 1;">
+        <label style="font-size: 12px; color: var(--text-sec);">Etiqueta</label>
+        <input type="text" id="new-card-tag" class="input-field" placeholder="Ex: Urgente">
+      </div>
+    </div>
+    <div id="create-card-error" class="error-msg"></div>
+    <div style="display: flex; justify-content: flex-end; gap: 8px;">
+      <button class="btn" style="background: transparent; color: #666; box-shadow: none;" onclick="closeCreateCardModal()">Cancelar</button>
+      <button class="btn" onclick="saveNewCard()" id="btn-save-new-card">Criar Cartão</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DE DOAÇÃO -->
+<div id="donate-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 10000; align-items: center; justify-content: center;">
+  <div style="background: var(--surface); padding: 32px; border-radius: 8px; width: 90%; max-width: 450px; box-shadow: 0 4px 24px rgba(0,0,0,0.3); text-align: center;">
+    
+    <h2 style="color: #d93025; margin-bottom: 16px; font-size: 28px;">DOE!</h2>
+    
+    <p style="margin-bottom: 24px; font-size: 15px; color: var(--text-main); line-height: 1.5;">
+      Este projeto é mantido gratuitamente por David Calazans no Github e sua contribuição de qualquer valor é um incentivo para melhorias futuras.
+    </p>
+    
+    <div style="background: #f1f3f4; padding: 16px; border-radius: 8px; margin-bottom: 24px; border: 1px dashed #ccc;">
+      <label style="display: block; font-size: 12px; color: var(--text-sec); margin-bottom: 4px;">Chave Pix:</label>
+      <span style="font-size: 18px; font-weight: bold; user-select: all; color: var(--text-main);">pixdc@uorak.com</span>
+    </div>
+
+    <h3 style="font-size: 16px; margin-bottom: 12px; color: var(--text-main);">Me encontre aqui</h3>
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 32px; background: #f8f9fa; padding: 16px; border-radius: 8px;">
+      <a href="https://www.linkedin.com/in/davidcalazans" target="_blank" class="social-link">Linkedin</a>
+      <a href="https://github.com/davidcalazans" target="_blank" class="social-link">Github</a>
+      <a href="https://www.youtube.com/@canaldavidcalazans" target="_blank" class="social-link">Youtube</a>
+    </div>
+    
+    <button class="btn" style="width: 100%; background: #e8eaed; color: var(--text-main); box-shadow: none;" onclick="closeDonateModal()">Fechar</button>
+  
+  </div>
+</div>
+
+<script>
+let currentUser = null;
+let currentCards = [];
+let currentLists = [];
+let currentChecklists = [];
+let currentBoardRole = '';
+let currentBoardId = '';
+let currentBoardName = '';
+let draggedCardId = null;
+let draggedListId = null;
+
+//--- LOGIN ---
+function attemptLogin() {
+  const keyInput = document.getElementById('access-key').value;
+  const errorDiv = document.getElementById('login-error');
+  if(keyInput.length < 20) {
+    errorDiv.innerText = "A chave deve ter no mínimo 20 caracteres.";
+    errorDiv.style.display = "block";
+    return;
+  }
+  errorDiv.style.display = "none";
+  google.script.run
+    .withSuccessHandler(handleLoginResponse)
+    .verifyLogin(keyInput);
+}
+
+function handleLoginResponse(response) {
+  if (response.success) {
+    currentUser = response;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = 'flex';
+    initApp();
+  } else {
+    const errorDiv = document.getElementById('login-error');
+    errorDiv.innerText = response.message;
+    errorDiv.style.display = "block";
+  }
+}
+
+// -- INICIALIZAÇÃO DA APLICAÇÃO ---
+function initApp() {
+  loadProjectTitle();
+  loadUserBoards();
+}
+
+//--- PROJETO ---
+function loadProjectTitle() {
+  google.script.run
+    .withSuccessHandler(function(title) {
+      document.getElementById('project-title-display').innerText = title;
+      if (currentUser.isAdm || (currentUser.permissions && currentUser.permissions.length > 0)) {
+        document.getElementById('edit-project-title-btn').style.display = 'inline-block';
+      }
+    })
+    .getProjectTitle();
+}
+
+function openEditProjectTitleModal() {
+  const current = document.getElementById('project-title-display').innerText;
+  document.getElementById('edit-project-title-input').value = current;
+  document.getElementById('edit-project-title-error').style.display = 'none';
+  document.getElementById('edit-project-title-modal').style.display = 'flex';
+}
+
+function closeEditProjectTitleModal() {
+  document.getElementById('edit-project-title-modal').style.display = 'none';
+}
+
+function saveProjectTitle() {
+  const newTitle = document.getElementById('edit-project-title-input').value.trim();
+  const err = document.getElementById('edit-project-title-error');
+  if (!newTitle) {
+    err.innerText = "Informe o nome do projeto.";
+    err.style.display = 'block';
+    return;
+  }
+  const btn = document.getElementById('btn-save-project-title');
+  btn.innerText = "Salvando...";
+  btn.disabled = true;
+  
+  google.script.run
+    .withSuccessHandler(function(res) {
+      btn.innerText = "Salvar";
+      btn.disabled = false;
+      if (res.success) {
+        document.getElementById('project-title-display').innerText = newTitle;
+        closeEditProjectTitleModal();
+      } else {
+        err.innerText = res.message;
+        err.style.display = 'block';
+      }
+    })
+    .updateProjectTitle(currentUser, newTitle);
+}
+
+// -- QUADROS --
+function loadUserBoards(selectBoardId = null) {
+  const listContainer = document.getElementById('boards-list');
+  listContainer.innerHTML = '<span style="color: var(--text-sec);">Buscando quadros...</span>';
+  google.script.run
+    .withSuccessHandler(function(boards) {
+      renderBoardsMenu(boards, selectBoardId);
+    })
+    .getPermittedBoards(currentUser);
+}
+
+function renderBoardsMenu(boards, selectBoardId = null) {
+  const listContainer = document.getElementById('boards-list');
+  const actionsBar = document.getElementById('board-actions-bar');
+  listContainer.innerHTML = '';
+  actionsBar.innerHTML = '';
+  
+  if (!boards || boards.length === 0) {
+    listContainer.innerHTML = '<span style="color: #d93025;">Nenhum quadro disponível.</span>';
+    return;
+  }
+  
+  if (currentUser.isAdm || (currentUser.permissions && currentUser.permissions.length > 0)) {
+    actionsBar.innerHTML = `
+      <button class="btn" style="background: rgba(26, 115, 232, 0.1); color: var(--primary); box-shadow: none; padding: 6px 12px; font-size: 13px;" onclick="openCreateBoardModal()">
+        <i class="material-icons" style="font-size: 18px;">add</i> Novo Quadro
+      </button>`;
+  }
+  
+  let activeBoardFound = false;
+  boards.forEach(board => {
+    const btn = document.createElement('button');
+    btn.className = 'board-btn';
+    btn.innerText = board.name;
+    btn.dataset.id = board.id;
+    btn.dataset.role = board.role;
+    
+    btn.onclick = () => {
+      document.querySelectorAll('.board-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentBoardId = board.id;
+      currentBoardRole = board.role;
+      currentBoardName = board.name;
+      renderBoardActionButtons(board.role);
+      document.getElementById('board-area').innerHTML = '<p>Carregando listas e cartões...</p>';
+      loadBoardData(board.id, board.role);
+    };
+    
+    listContainer.appendChild(btn);
+    if (selectBoardId && board.id === selectBoardId) {
+      btn.click();
+      activeBoardFound = true;
+    }
+  });
+  
+  if (!activeBoardFound && boards.length > 0) {
+    listContainer.firstChild.click();
+  }
+}
+
+function renderBoardActionButtons(role) {
+  const actionsBar = document.getElementById('board-actions-bar');
+  const existingNewBtn = actionsBar.querySelector('button[onclick="openCreateBoardModal()"]');
+  actionsBar.innerHTML = '';
+  if (existingNewBtn) actionsBar.appendChild(existingNewBtn);
+  
+  if (role !== 'leitor') {
+    const editBoardBtn = document.createElement('button');
+    editBoardBtn.className = 'btn';
+    editBoardBtn.style.cssText = 'background: transparent; color: var(--text-sec); box-shadow: none; padding: 6px 8px;';
+    editBoardBtn.title = "Editar Nome deste Quadro";
+    editBoardBtn.innerHTML = '<i class="material-icons" style="font-size: 20px;">edit</i>';
+    editBoardBtn.onclick = openEditBoardModal;
+    
+    const deleteBoardBtn = document.createElement('button');
+    deleteBoardBtn.className = 'btn';
+    deleteBoardBtn.style.cssText = 'background: transparent; color: #d93025; box-shadow: none; padding: 6px 8px;';
+    deleteBoardBtn.title = "Excluir este Quadro";
+    deleteBoardBtn.innerHTML = '<i class="material-icons" style="font-size: 20px;">delete</i>';
+    deleteBoardBtn.onclick = confirmDeleteBoard;
+    
+    actionsBar.appendChild(editBoardBtn);
+    actionsBar.appendChild(deleteBoardBtn);
+  }
+}
+
+// -- CRIAR / EDITAR/EXCLUIR QUADROS ---
+function openCreateBoardModal() {
+  document.getElementById('create-board-input').value = '';
+  document.getElementById('create-board-error').style.display = 'none';
+  document.getElementById('create-board-modal').style.display = 'flex';
+}
+
+function closeCreateBoardModal() {
+  document.getElementById('create-board-modal').style.display = 'none';
+}
+
+function saveNewBoard() {
+  const name = document.getElementById('create-board-input').value.trim();
+  const err = document.getElementById('create-board-error');
+  if (!name) {
+    err.innerText = "Informe o nome do novo quadro.";
+    err.style.display = 'block';
+    return;
+  }
+  const btn = document.getElementById('btn-save-new-board');
+  btn.innerText = "Criando...";
+  btn.disabled = true;
+  google.script.run
+    .withSuccessHandler(function(res) {
+      btn.innerText = "Criar Quadro";
+      btn.disabled = false;
+      if (res.success) {
+        closeCreateBoardModal();
+        loadUserBoards(res.boardId);
+      } else {
+        err.innerText = res.message;
+        err.style.display = 'block';
+      }
+    })
+    .createNewBoard(currentUser, name);
+}
+
+function openEditBoardModal() {
+  document.getElementById('edit-board-input').value = currentBoardName;
+  document.getElementById('edit-board-error').style.display = 'none';
+  document.getElementById('edit-board-modal').style.display = 'flex';
+}
+
+function closeEditBoardModal() {
+  document.getElementById('edit-board-modal').style.display = 'none';
+}
+
+function saveBoardName() {
+  const newName = document.getElementById('edit-board-input').value.trim();
+  const err = document.getElementById('edit-board-error');
+  if (!newName) {
+    err.innerText = "Informe um nome válido.";
+    err.style.display = 'block';
+    return;
+  }
+  const btn = document.getElementById('btn-save-board-name');
+  btn.innerText = "Salvando...";
+  btn.disabled = true;
+  google.script.run
+    .withSuccessHandler(function(res) {
+      btn.innerText = "Salvar";
+      btn.disabled = false;
+      if (res.success) {
+        closeEditBoardModal();
+        loadUserBoards(currentBoardId);
+      } else {
+        err.innerText = res.message;
+        err.style.display = 'block';
+      }
+    })
+    .updateBoardName(currentUser, currentBoardRole, currentBoardId, newName);
+}
+
+function confirmDeleteBoard() {
+  if (confirm(`Tem certeza que deseja excluir o quadro "${currentBoardName}"?\n\nTodas as listas e cartões dele serão excluídos permanentemente.`)) {
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res.success) {
+          loadUserBoards();
+        } else {
+          alert(res.message);
+        }
+      })
+      .deleteBoard(currentUser, currentBoardRole, currentBoardId);
+  }
+}
+
+//--- CARREGAR DADOS DO QUADRO ---
+document.getElementById('search-input').addEventListener('input', function(e) {
+  const searchTerm = e.target.value.toLowerCase();
+  document.querySelectorAll('.kanban-card').forEach(card => {
+    const title = card.querySelector('.card-title').innerText.toLowerCase();
+    const body = card.querySelector('.card-body').innerText.toLowerCase();
+    
+    // Busca a tag no cartão atual
+    const tagElement = card.querySelector('.card-tag');
+    // Se a tag existir, pega o texto dela em minúsculo, senão, deixa vazio
+    const tag = tagElement ? tagElement.innerText.toLowerCase() : "";
+    
+    // Adiciona a verificação da tag (tag.includes) na condição de exibição
+    card.style.display = (title.includes(searchTerm) || body.includes(searchTerm) || tag.includes(searchTerm)) ? 'block' : 'none';
+  });
+});
+
+function loadBoardData(boardId, role) {
+  const boardArea = document.getElementById('board-area');
+  boardArea.innerHTML = '<p>Carregando listas e cartões...</p>';
+  google.script.run
+    .withSuccessHandler((data) => {
+      if (data && !data.error) {
+        currentLists = data.lists || [];
+        currentCards = data.cards || [];
+        currentChecklists = data.checklists || [];
+        applySortingAndRender();
+      } else {
+        boardArea.innerHTML = `<p style="color: #d93025;">${data ? data.error : 'Erro ao carregar dados'}</p>`;
+      }
+    })
+    .getBoardListsAndCards(boardId);
+}
+
+function getSortedCards() {
+  const sortType = document.getElementById('sort-select').value;
+  let sorted = [...currentCards];
+  if (sortType === 'deadline') {
+    sorted.sort((a, b) => {
+      if (!a.deadline) return 1;
+      if (!b.deadline) return -1;
+      return new Date(a.deadline) - new Date(b.deadline);
+    });
+  } 
+  return sorted;
+}
+
+function applySortingAndRender() {
+  renderBoard();
+}
+
+function createCardHTML(card) {
+  let tagColor = (card.tag && card.tag.toLowerCase().includes('urgente')) ? '#d93025': '#1a73e8';
+  const isDraggable = currentBoardRole !== 'leitor';
+  
+  // Badge do Checklist
+  const cardChecklists = currentChecklists.filter(chk => String(chk.cardId) === String(card.id));
+  let checklistBadgeHTML = "";
+  if (cardChecklists.length > 0) {
+    const completedCount = cardChecklists.filter(chk => chk.done).length;
+    const totalCount = cardChecklists.length;
+    const isAllDone = completedCount === totalCount;
+    const badgeBg = isAllDone ? '#e6f4ea' : '#f1f3f4';
+    const badgeColor = isAllDone ? '#137333' : '#5f6368';
+    
+    checklistBadgeHTML = `
+      <div style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: ${badgeColor}; background: ${badgeBg}; padding: 2px 6px; border-radius: 4px; font-weight: 500;" title="Checklist: ${completedCount} de ${totalCount} concluídos">
+        <i class="material-icons" style="font-size: 13px;">check_box</i>
+        <span>${completedCount}/${totalCount}</span>
+      </div>`;
+  }
+  
+  return `
+    <div class="kanban-card" data-id="${card.id}" draggable="${isDraggable}" ondragstart="handleCardDragStart(event, '${card.id}')" ondragend="handleCardDragEnd(event)" onclick="openEditModal('${card.id}')">
+      ${card.tag ? `<span class="card-tag" style="background-color: ${tagColor}">${card.tag}</span>` : ''}
+      <div class="card-title"> ${card.title}</div>
+      <div class="card-body">${card.body || ""}</div>
+      <div class="card-footer">
+        ${card.deadline ? `
+          <div class="card-deadline">
+            <i class="material-icons" style="font-size: 14px;">schedule</i>
+            ${new Date(card.deadline).toLocaleDateString()}
+          </div>` : ""}
+        ${checklistBadgeHTML}
+      </div>
+    </div>`;
+}
+
+function renderBoard() {
+  const boardArea = document.getElementById('board-area');
+  boardArea.innerHTML = '';
+  const isDraggableList = currentBoardRole !== 'leitor';
+  const sortedCardsList = getSortedCards();
+  
+  currentLists.forEach(list => {
+    const listHTML = document.createElement('div');
+    listHTML.className = 'kanban-list';
+    listHTML.dataset.id = list.id;
+    if (isDraggableList) {
+      listHTML.draggable = true;
+      listHTML.ondragstart = (e) => handleListDragStart(e, list.id);
+      listHTML.ondragend = handleListDragEnd;
+      listHTML.ondragover = handleListDragOver;
+      listHTML.ondrop = (e) => handleListDrop(e, list.id);
+    }
+    
+    let addCardButtonHTML = '';
+    let listIconsHTML = '';
+    
+    if (currentBoardRole !== 'leitor') {
+      addCardButtonHTML = `
+        <div style="padding: 8px; border-top: 1px solid rgba(0,0,0,0.05);">
+          <button class="btn" style="width: 100%; background: transparent; color: var(--primary); box-shadow: none; justify-content: flex-start; padding: 6px 8px; font-size: 13px;" onclick="openCreateCardModal('${list.id}')">
+            <i class="material-icons" style="font-size: 18px;">add</i> Adicionar cartão
+          </button>
+        </div>`;
+      
+      listIconsHTML = `
+        <div class="kanban-list-actions">
+          <span class="edit-list-btn" onclick="openEditListModal('${list.id}', '${list.name}')" title="Editar Nome da Lista">
+            <i class="material-icons" style="font-size: 20px;">edit</i>
+          </span>
+          <span class="delete-list-btn" onclick="confirmDeleteList('${list.id}', '${list.name}')" title="Excluir Lista">
+            <i class="material-icons" style="font-size: 20px;">delete</i>
+          </span>
+        </div>`;
+    }
+    
+    listHTML.innerHTML = `
+      <div class="kanban-list-header" style="border-top: 4px solid ${list.color};">
+        <span>${list.name}</span>
+        ${listIconsHTML}
+      </div>
+      <div class="kanban-list-body" id="list-content-${list.id}" ondragover="handleCardDragOver(event)" ondragleave="handleCardDragLeave(event)" ondrop="handleCardDrop(event, '${list.id}')" style="padding: 8px; flex: 1; overflow-y: auto; min-height: 100px;">
+      </div>
+      ${addCardButtonHTML}`;
+    
+    boardArea.appendChild(listHTML);
+    const listBodyElement = document.getElementById(`list-content-${list.id}`);
+    const cardsForThisList = sortedCardsList.filter(card => card.listId == list.id);
+    cardsForThisList.forEach(card => {
+      listBodyElement.innerHTML += createCardHTML(card);
+    });
+  });
+  
+  if (currentBoardRole !== 'leitor') {
+    const addListBtnContainer = document.createElement('div');
+    addListBtnContainer.style.cssText = 'min-width: 250px; margin-right: 16px;';
+    addListBtnContainer.innerHTML = `
+      <button class="btn" style="width: 100%; background: rgba(26, 115, 232, 0.08); color: var(--primary); box-shadow: none; height: 48px;" onclick="openCreateListModal()">
+        <i class="material-icons" style="font-size: 20px;">add</i> Nova Lista
+      </button>`;
+    boardArea.appendChild(addListBtnContainer);
+  }
+}
+
+// --- REORDENAÇÃO DRAG & DROP DE LISTAS ---
+function handleListDragStart(e, listId) {
+  if (e.target.classList.contains('kanban-card')) return;
+  draggedListId = listId;
+  e.dataTransfer.setData('type', 'list');
+  e.currentTarget.classList.add('dragging-list');
+}
+
+function handleListDragEnd(e) {
+  e.currentTarget.classList.remove('dragging-list');
+  draggedListId = null;
+}
+
+function handleListDragOver(e) { e.preventDefault(); }
+
+function handleListDrop(e, targetListId) {
+  e.preventDefault();
+  if (!draggedListId || draggedListId === targetListId) return;
+  const fromIndex = currentLists.findIndex(l => l.id === draggedListId);
+  const toIndex = currentLists.findIndex(l => l.id === targetListId);
+  if (fromIndex < 0 || toIndex < 0) return;
+  
+  const [movedList] = currentLists.splice(fromIndex, 1);
+  currentLists.splice(toIndex, 0, movedList);
+  
+  const listOrders = currentLists.map((list, index) => {
+    list.position = index + 1;
+    return { id: list.id, position: index + 1};
+  });
+  renderBoard();
+  google.script.run.updateListOrder(currentUser, currentBoardRole, listOrders);
+}
+
+// -- DRAG & DROP DE CARTÕES ---
+function handleCardDragStart(e, cardId) {
+  e.stopPropagation();
+  draggedCardId = cardId;
+  e.dataTransfer.setData('type', 'card');
+  e.target.classList.add('dragging');
+}
+
+function handleCardDragEnd(e) {
+  e.target.classList.remove('dragging');
+  draggedCardId = null;
+}
+
+function handleCardDragOver(e) {
+  if (currentBoardRole === 'leitor') return;
+  e.preventDefault();
+  e.currentTarget.classList.add('drag-over');
+}
+
+function handleCardDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+
+function handleCardDrop(e, targetListId) {
+  if (currentBoardRole === 'leitor') return;
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (!draggedCardId) return;
+  
+  const card = currentCards.find(c => c.id === draggedCardId);
+  if (!card || card.listId === targetListId) return;
+  
+  card.listId = targetListId;
+  renderBoard();
+  
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res || !res.success) {
+        alert(res ? res.message : "Erro ao mover cartão.");
+        loadBoardData(currentBoardId, currentBoardRole);
+      }
+    })
+    .moveCardToList(currentUser, currentBoardRole, draggedCardId, targetListId);
+}
+
+// -- MODAL DE EDIÇÃO DE CARTÃO E CHECKLISTS ---
+function openEditModal(cardId) {
+  const card = currentCards.find(c => c.id === cardId);
+  if (!card) return;
+  
+  document.getElementById('modal-card-id').value = card.id;
+  document.getElementById('modal-title').value = card.title;
+  document.getElementById('modal-body').value = card.body || '';
+  document.getElementById('modal-tag').value = card.tag || '';
+  document.getElementById('modal-deadline').value = card.deadline ? card.deadline.split('T')[0] : '';
+  document.getElementById('modal-error').style.display = 'none';
+  
+  // Renderiza a seção de checklist
+  renderChecklistInModal(card.id);
+  
+  // Desabilita controles se for leitor
+  const isLeitor = currentBoardRole === 'leitor';
+  document.getElementById('add-checklist-item-box').style.display = isLeitor ? 'none' : 'flex';
+  document.getElementById('btn-delete-card').style.display = isLeitor ? 'none' : 'inline-flex';
+  document.getElementById('btn-save-card').style.display = isLeitor ? 'none' : 'inline-flex';
+  
+  document.getElementById('edit-modal').style.display = 'flex';
+}
+
+function renderChecklistInModal(cardId) {
+  const container = document.getElementById('checklist-items-container');
+  container.innerHTML = '';
+  
+  const items = currentChecklists.filter(chk => String(chk.cardId) === String(cardId));
+  const total = items.length;
+  const completed = items.filter(chk => chk.done).length;
+  const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+  
+  document.getElementById('checklist-progress-text').innerText = `${percent}% (${completed}/${total})`;
+  document.getElementById('checklist-progress-bar').style.width = `${percent}%`;
+  
+  const isLeitor = currentBoardRole === 'leitor';
+  
+  items.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'checklist-item';
+    row.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+        <input type="checkbox" ${item.done ? 'checked' : ''} ${isLeitor ? 'disabled' : ''} onchange="toggleChecklistItem('${item.id}', this.checked)" style="width: 16px; height: 16px; cursor: pointer;">
+        <span style="${item.done ? 'text-decoration: line-through; color: #80868b;' : 'color: #202124;'} font-size: 13px; word-break: break-word;">${escapeHtml(item.text)}</span>
+      </div>
+      ${!isLeitor ? `<i class="material-icons" style="font-size: 18px; color: #5f6368; cursor: pointer;" onclick="deleteChecklistItem('${item.id}')" title="Excluir item">close</i>` : ''}`;
+    container.appendChild(row);
+  });
+}
+
+function escapeHtml(text) {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+function addChecklistItem() {
+  if (currentBoardRole === 'leitor') return;
+  const cardId = document.getElementById('modal-card-id').value;
+  const input = document.getElementById('new-checklist-input');
+  const text = input.value.trim();
+  if (!text) return;
+  
+  input.value = '';
+  
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (res.success) {
+        currentChecklists.push({
+          id: res.itemId,
+          cardId: cardId,
+          text: text,
+          done: false
+        });
+        renderChecklistInModal(cardId);
+        renderBoard();
+      } else {
+        alert(res.message);
+      }
+    })
+    .addChecklistItem(currentUser, currentBoardRole, cardId, text);
+}
+
+function toggleChecklistItem(itemId, isDone) {
+  if (currentBoardRole === 'leitor') return;
+  const item = currentChecklists.find(chk => String(chk.id) === String(itemId));
+  if (item) {
+    item.done = isDone;
+    renderChecklistInModal(item.cardId);
+    renderBoard();
+    google.script.run.toggleChecklistItem(currentUser, currentBoardRole, itemId, isDone);
+  }
+}
+
+function deleteChecklistItem(itemId) {
+  if (currentBoardRole === 'leitor') return;
+  const index = currentChecklists.findIndex(chk => String(chk.id) === String(itemId));
+  if (index >= 0) {
+    const cardId = currentChecklists[index].cardId;
+    currentChecklists.splice(index, 1);
+    renderChecklistInModal(cardId);
+    renderBoard();
+    google.script.run.deleteChecklistItem(currentUser, currentBoardRole, itemId);
+  }
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').style.display = 'none';
+}
+
+function saveCardEdit() {
+  if (currentBoardRole === 'leitor') return;
+  const btn = document.getElementById('btn-save-card');
+  btn.innerText = "Salvando...";
+  btn.disabled = true;
+  
+  const updatedData = {
+    id: document.getElementById('modal-card-id').value,
+    title: document.getElementById('modal-title').value,
+    body: document.getElementById('modal-body').value,
+    deadline: document.getElementById('modal-deadline').value,
+    tag: document.getElementById('modal-tag').value
+  };
+  
+  google.script.run
+    .withSuccessHandler(function(response) {
+      btn.innerText = "Salvar";
+      btn.disabled = false;
+      if (response.success) {
+        closeEditModal();
+        loadBoardData(currentBoardId, currentBoardRole);
+      } else {
+        const err = document.getElementById('modal-error');
+        err.innerText = response.message;
+        err.style.display = 'block';
+      }
+    })
+    .updateCardData(currentUser, currentBoardRole, updatedData);
+}
+
+//--- CRIAR LISTA ---
+function openCreateListModal() {
+  document.getElementById('new-list-name').value = '';
+  document.getElementById('create-list-error').style.display = 'none';
+  document.getElementById('create-list-modal').style.display = 'flex';
+}
+
+function closeCreateListModal() {
+  document.getElementById('create-list-modal').style.display = 'none';
+}
+
+function saveNewList() {
+  const name = document.getElementById('new-list-name').value.trim();
+  const color = document.getElementById('new-list-color').value;
+  const err = document.getElementById('create-list-error');
+  if (!name) {
+    err.innerText = "Informe o nome da lista.";
+    err.style.display = 'block';
+    return;
+  }
+  
+  const btn = document.getElementById('btn-save-list');
+  btn.innerText = "Criando...";
+  btn.disabled = true;
+  
+  google.script.run
+    .withSuccessHandler(function(res) {
+      btn.innerText = "Criar Lista";
+      btn.disabled = false;
+      if (res && res.success) {
+        closeCreateListModal();
+        loadBoardData(currentBoardId, currentBoardRole);
+      } else {
+        err.innerText = res ? res.message : "Erro desconhecido.";
+        err.style.display = 'block';
+      }
+    })
+    .createNewList(currentUser, currentBoardRole, currentBoardId, name, color);
+}
+
+//--- EDITAR NOME DA LISTA ---
+function openEditListModal(listId, currentName) {
+  document.getElementById('edit-list-id').value = listId;
+  document.getElementById('edit-list-name').value = currentName;
+  document.getElementById('edit-list-error').style.display = 'none';
+  document.getElementById('edit-list-modal').style.display = 'flex';
+}
+
+function closeEditListModal() {
+  document.getElementById('edit-list-modal').style.display = 'none';
+}
+
+function saveListName() {
+  const listId = document.getElementById('edit-list-id').value;
+  const newName = document.getElementById('edit-list-name').value.trim();
+  const err = document.getElementById('edit-list-error');
+  if (!newName) {
+    err.innerText = "Informe um nome válido.";
+    err.style.display = 'block';
+    return;
+  }
+  const btn = document.getElementById('btn-save-list-name');
+  btn.innerText = "Salvando...";
+  btn.disabled = true;
+  google.script.run
+    .withSuccessHandler(function(res) {
+      btn.innerText = "Salvar";
+      btn.disabled = false;
+      if (res && res.success) {
+        closeEditListModal();
+        loadBoardData(currentBoardId, currentBoardRole);
+      } else {
+        err.innerText = res ? res.message : "Erro ao salvar nome.";
+        err.style.display = 'block';
+      }
+    })
+    .updateListName(currentUser, currentBoardRole, listId, newName);
+}
+
+// --- CRIAR CARTÃO
+function openCreateCardModal(listId) {
+  document.getElementById('new-card-list-id').value = listId;
+  document.getElementById('new-card-title').value = '';
+  document.getElementById('new-card-body').value = '';
+  document.getElementById('new-card-deadline').value = '';
+  document.getElementById('new-card-tag').value = '';
+  document.getElementById('create-card-error').style.display = 'none';
+  document.getElementById('create-card-modal').style.display = 'flex';
+}
+
+function closeCreateCardModal() {
+  document.getElementById('create-card-modal').style.display = 'none';
+}
+
+function saveNewCard() {
+  const listId = document.getElementById('new-card-list-id').value;
+  const title = document.getElementById('new-card-title').value.trim();
+  const body = document.getElementById('new-card-body').value;
+  const deadline = document.getElementById('new-card-deadline').value;
+  const tag = document.getElementById('new-card-tag').value;
+  const err = document.getElementById('create-card-error');
+  
+  if (!title) {
+    err.innerText = "Informe o título do cartão.";
+    err.style.display = 'block';
+    return;
+  }
+  
+  const btn = document.getElementById('btn-save-new-card');
+  btn.innerText = "Criando...";
+  btn.disabled = true;
+  
+  google.script.run
+    .withSuccessHandler(function(res) {
+      btn.innerText = "Criar Cartão";
+      btn.disabled = false;
+      if (res.success) {
+        closeCreateCardModal();
+        loadBoardData(currentBoardId, currentBoardRole);
+      } else {
+        err.innerText = res.message;
+        err.style.display = 'block';
+      }
+    })
+    .createNewCard(currentUser, currentBoardRole, listId, title, body, deadline, tag);
+}
+
+//-- EXCLUSÃO DE CARTÃO E LISTA
+function confirmDeleteCard() {
+  const cardId = document.getElementById('modal-card-id').value;
+  if (!cardId) return;
+  if (confirm("Deseja excluir este cartão definitivamente?")) {
+    const btn = document.getElementById('btn-delete-card');
+    btn.innerText = "Excluindo...";
+    btn.disabled = true;
+    google.script.run
+      .withSuccessHandler(function(res) {
+        btn.innerText = "Excluir";
+        btn.disabled = false;
+        if (res && res.success) {
+          closeEditModal();
+          loadBoardData(currentBoardId, currentBoardRole);
+        } else {
+          alert(res ? res.message : "Erro ao excluir cartão.");
+        }
+      })
+      .deleteCard(currentUser, currentBoardRole, cardId);
+  }
+}
+
+function confirmDeleteList(listId, listName) {
+  if (confirm(`Excluir a lista "${listName}" e todos os seus cartões?`)) {
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res && res.success) {
+          loadBoardData(currentBoardId, currentBoardRole);
+        } else {
+          alert(res ? res.message : "Erro ao excluir lista.");
+        }
+      })
+      .deleteList(currentUser, currentBoardRole, listId);
+  }
+}
+
+// -- MODAL DE DOAÇÃO ---
+function openDonateModal() {
+  document.getElementById('donate-modal').style.display = 'flex';
+}
+
+function closeDonateModal() {
+  document.getElementById('donate-modal').style.display = 'none';
+}
+</script>
+</body>
+</html>
