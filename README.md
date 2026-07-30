@@ -1,7 +1,7 @@
 # GDrive-Planner
 GDrive Planner é um planejador estilo Kanban / Trello que roda dentro do seu Google Drive.
 
-![Painel GDrive Planner](/painel GDrive Planner.png)
+![Painel GDrive Planner](https://raw.githubusercontent.com/davidcalazans/GDrive-Planner/refs/heads/main/painel%20GDrive%20Planner.png)
 
 ## Instalação
 1 - Crie uma planilha dentro do seu Google Drive.
