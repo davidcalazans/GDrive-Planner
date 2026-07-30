@@ -41,7 +41,6 @@ body { font-family: 'Roboto', sans-serif; background-color: var(--bg-color); col
 header {
   background: var(--surface); padding: 5px 24px; display: flex;
   justify-content: space-between; align-items: center; flex-wrap: wrap;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1); z-index: 10; gap: 16px;
 }
 .project-header-container { display: flex; align-items: center; gap: 8px; }
 .edit-project-btn { cursor: pointer; color: var(--text-sec); border-radius: 50%; padding: 4px; transition: 0.2s; }
@@ -55,7 +54,7 @@ header {
 /* BARRA DE QUADROS */
 .boards-menu-wrapper {
   display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
-  padding: 5px 24px; background-color: #e8eaed; border-bottom: 1px solid #ddd; gap: 12px;
+  padding: 5px 24px; background-color: #ffffff; border-bottom: 1px solid #ddd; gap: 12px;
 }
 .boards-list { display: flex; gap: 8px; align-items: center; overflow-x: auto; flex: 1; padding-bottom: 4px;}
 .board-btn {
@@ -72,7 +71,7 @@ header {
 
 /* CONTAINER PRINCIPAL DO KANBAN */
 .main-container { display: flex; flex: 1; overflow: hidden; width: 100%; }
-.board-area { flex: 1; padding: 24px; display: flex; gap: 16px; overflow-x: auto; align-items: flex-start; height: 100%; }
+.board-area { flex: 1; padding: 24px; display: flex; gap: 16px; overflow-x: auto; align-items: flex-start; height: 100%; background: #ffffff;}
 .kanban-list {
   background-color: #f1f3f4; border-radius: 8px; width: 290px; min-width: 290px;
   display: flex; flex-direction: column; max-height: 100%; transition: transform 0.2s;
@@ -787,11 +786,11 @@ function renderBoard() {
     
     if (currentBoardRole !== 'leitor') {
       addCardButtonHTML = `
-        <div style="padding: 8px; border-top: 1px solid rgba(0,0,0,0.05);">
-          <button class="btn" style="width: 100%; background: transparent; color: var(--primary); box-shadow: none; justify-content: flex-start; padding: 6px 8px; font-size: 13px;" onclick="openCreateCardModal('${list.id}')">
-            <i class="material-icons" style="font-size: 18px;">add</i> Adicionar cartão
-          </button>
-        </div>`;
+      <div style="padding: 8px; border-top: 1px solid rgba(0,0,0,0.05); background-color: #f1f3f4; border-radius: 0 0 8px 8px;">
+        <button class="btn" style="width: 100%; background: transparent; color: var(--primary); box-shadow: none; justify-content: flex-start; padding: 6px 8px; font-size: 13px;" onclick="openCreateCardModal('${list.id}')">
+          <i class="material-icons" style="font-size: 18px;">add</i> Adicionar cartão
+        </button>
+      </div>`;
       
       listIconsHTML = `
         <div class="kanban-list-actions">
@@ -805,13 +804,17 @@ function renderBoard() {
     }
     
     listHTML.innerHTML = `
-      <div class="kanban-list-header" style="border-top: 4px solid ${list.color};">
-        <span>${list.name}</span>
-        ${listIconsHTML}
-      </div>
-      <div class="kanban-list-body" id="list-content-${list.id}" ondragover="handleCardDragOver(event)" ondragleave="handleCardDragLeave(event)" ondrop="handleCardDrop(event, '${list.id}')" style="padding: 8px; flex: 1; overflow-y: auto; min-height: 100px;">
-      </div>
-      ${addCardButtonHTML}`;
+    <div class="kanban-list-header" style="border-top: 4px solid ${list.color};">
+      <span>${list.name}</span>
+      ${listIconsHTML}
+    </div>
+    <div class="kanban-list-body" id="list-content-${list.id}"
+      ondragover="handleCardDragOver(event)" ondragleave="handleCardDragLeave(event)"
+      ondrop="handleCardDrop(event, '${list.id}')" style="padding: 8px; flex: 1; overflow-y: auto; min-height: 100px;">
+    </div>
+    ${addCardButtonHTML}`;
+    // Aplica a cor suave na lista inteira (título + corpo)
+    listHTML.style.backgroundColor = `${list.color}1A`;
     
     boardArea.appendChild(listHTML);
     const listBodyElement = document.getElementById(`list-content-${list.id}`);
