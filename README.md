@@ -34,3 +34,4 @@ Implantação ok.
 Pronto, agora você pode acessar o seu planner.
 
 ## Vídeo tutorial de instalação no YouTube.
+https://www.youtube.com/watch?v=3VpxfAS5mh0
